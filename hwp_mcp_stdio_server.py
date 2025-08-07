@@ -176,6 +176,114 @@ def hwp_connection_info() -> str:
         return f"Error: {error_msg}"
 
 @mcp.tool()
+def hwp_select_and_replace(find_text: str, replace_text: str) -> str:
+    """Select and replace text manually while preserving formatting."""
+    try:
+        hwp = get_hwp_controller()
+        if not hwp:
+            return "Error: Failed to connect to HWP program"
+
+        if hwp.select_and_replace_text(find_text, replace_text):
+            return f"Successfully replaced '{find_text}' with '{replace_text}'"
+        else:
+            return f"Failed to replace text or text not found: '{find_text}'"
+    except Exception as e:
+        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+        logger.error(f"Error in select and replace: {error_msg}", exc_info=True)
+        return f"Error: {error_msg}"
+
+@mcp.tool()
+def hwp_manual_find_replace(find_text: str, replace_text: str) -> str:
+    """Manual find and replace using reliable cursor positioning method."""
+    try:
+        hwp = get_hwp_controller()
+        if not hwp:
+            return "Error: Failed to connect to HWP program"
+
+        if hwp.manual_find_and_replace(find_text, replace_text):
+            return f"Successfully replaced '{find_text}' with '{replace_text}' using manual method"
+        else:
+            return f"Failed to replace text or text not found: '{find_text}'"
+    except Exception as e:
+        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+        logger.error(f"Error in manual find replace: {error_msg}", exc_info=True)
+        return f"Error: {error_msg}"
+
+@mcp.tool()
+def hwp_safe_insert_after(find_text: str, insert_text: str) -> str:
+    """Safely insert text after a found location without risking document corruption."""
+    try:
+        hwp = get_hwp_controller()
+        if not hwp:
+            return "Error: Failed to connect to HWP program"
+
+        if hwp.safe_insert_after_text(find_text, insert_text):
+            return f"Successfully inserted '{insert_text}' after '{find_text}'"
+        else:
+            return f"Failed to insert text or location not found: '{find_text}'"
+    except Exception as e:
+        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+        logger.error(f"Error in safe insert: {error_msg}", exc_info=True)
+        return f"Error: {error_msg}"
+
+@mcp.tool()
+def hwp_find_and_replace(find_text: str, replace_text: str, replace_all: bool = True) -> str:
+    """Find and replace text in the current HWP document."""
+    try:
+        hwp = get_hwp_controller()
+        if not hwp:
+            return "Error: Failed to connect to HWP program"
+
+        if hwp.find_and_replace_text(find_text, replace_text, replace_all):
+            return f"Successfully replaced '{find_text}' with '{replace_text}'"
+        else:
+            return f"Failed to replace text or text not found: '{find_text}'"
+    except Exception as e:
+        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+        logger.error(f"Error in find and replace: {error_msg}", exc_info=True)
+        return f"Error: {error_msg}"
+
+@mcp.tool()
+def hwp_move_to_text(search_text: str) -> str:
+    """Move cursor to specific text in the HWP document."""
+    try:
+        hwp = get_hwp_controller()
+        if not hwp:
+            return "Error: Failed to connect to HWP program"
+
+        if hwp.move_to_text(search_text):
+            return f"Successfully moved cursor to: '{search_text}'"
+        else:
+            return f"Text not found: '{search_text}'"
+    except Exception as e:
+        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+        logger.error(f"Error moving to text: {error_msg}", exc_info=True)
+        return f"Error: {error_msg}"
+
+@mcp.tool()
+def hwp_fill_form_field(field_identifier: str, new_value: str, method: str = "replace") -> str:
+    """Fill a form field in the HWP document.
+
+    Args:
+        field_identifier: Text to identify the field location
+        new_value: Value to fill in
+        method: How to fill ("replace", "append", "insert_after")
+    """
+    try:
+        hwp = get_hwp_controller()
+        if not hwp:
+            return "Error: Failed to connect to HWP program"
+
+        if hwp.fill_form_field(field_identifier, new_value, method):
+            return f"Successfully filled field '{field_identifier}' with '{new_value}' using method '{method}'"
+        else:
+            return f"Failed to fill field: '{field_identifier}'"
+    except Exception as e:
+        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+        logger.error(f"Error filling form field: {error_msg}", exc_info=True)
+        return f"Error: {error_msg}"
+
+@mcp.tool()
 def hwp_save(path: str = None) -> str:
     """Save the current HWP document."""
     try:

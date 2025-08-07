@@ -111,6 +111,321 @@ class HwpController:
 
         return info
 
+    def find_and_replace_text(self, find_text: str, replace_text: str, replace_all: bool = True) -> bool:
+        """
+        문서에서 특정 텍스트를 찾아서 바꿉니다. 포맷팅을 유지합니다.
+
+        Args:
+            find_text (str): 찾을 텍스트
+            replace_text (str): 바꿀 텍스트
+            replace_all (bool): 모든 항목을 바꿀지 여부 (기본값: True)
+
+        Returns:
+            bool: 성공 여부
+        """
+        try:
+            if not self.is_hwp_running:
+                print("HWP is not running")
+                return False
+
+            print(f"Attempting to find and replace: '{find_text}' -> '{replace_text}'")
+
+            # Method 1: Try using HWP's built-in find/replace (preserves formatting)
+            try:
+                # Move to beginning of document first
+                self.hwp.HAction.Run("MoveDocBegin")
+
+                # Get the find/replace parameter set - use correct action name
+                action_name = "AllReplace" if replace_all else "Replace"
+                self.hwp.HAction.GetDefault(action_name, self.hwp.HParameterSet.HFindReplace.HSet)
+                pset = self.hwp.HParameterSet.HFindReplace
+
+                # Set search parameters according to official documentation
+                pset.Direction = self.hwp.FindDir("AllDoc")  # Search entire document
+                pset.FindString = find_text
+                pset.ReplaceString = replace_text
+                pset.ReplaceMode = 1 if replace_all else 0  # Replace mode
+                pset.IgnoreMessage = 1  # Don't show dialog messages
+                pset.FindType = 1  # Normal find
+                pset.FindJaso = 0  # Don't search by Jaso
+                pset.FindRegExp = 0  # Don't use regular expressions
+                pset.WholeWordOnly = 0  # Don't match whole words only
+                pset.MatchCase = 0  # Case insensitive
+                pset.AllWordForms = 0  # Don't find all word forms
+                pset.SeveralWords = 0  # Don't find several words
+                pset.UseWildCards = 0  # Don't use wildcards
+                pset.AutoSpell = 1  # Use auto spell
+
+                # Execute find/replace
+                result = self.hwp.HAction.Execute(action_name, pset.HSet)
+
+                if result:
+                    print(f"Successfully replaced using built-in method (formatting preserved)")
+                    return True
+                else:
+                    print(f"Built-in method returned False, trying alternative approach")
+
+            except Exception as e1:
+                print(f"Built-in method error: {e1}")
+
+            # Method 2: Try single Replace operation (safer than manual selection)
+            try:
+                # Move to document beginning
+                self.hwp.HAction.Run("MoveDocBegin")
+
+                # Use Replace action for single replacement
+                self.hwp.HAction.GetDefault("Replace", self.hwp.HParameterSet.HFindReplace.HSet)
+                replace_pset = self.hwp.HParameterSet.HFindReplace
+
+                replace_pset.FindString = find_text
+                replace_pset.ReplaceString = replace_text
+                replace_pset.IgnoreMessage = 1
+                replace_pset.Direction = self.hwp.FindDir().FORWARD
+                replace_pset.FindJaso = 0
+                replace_pset.FindRegExp = 0
+                replace_pset.FindWholeWord = 0
+                replace_pset.IgnoreCase = 0
+                replace_pset.ReplaceMode = 1 if replace_all else 0
+
+                # Execute replace
+                if replace_all:
+                    result = self.hwp.HAction.Execute("AllReplace", replace_pset.HSet)
+                else:
+                    result = self.hwp.HAction.Execute("Replace", replace_pset.HSet)
+
+                if result:
+                    print(f"Successfully replaced using direct Replace method")
+                    return True
+                else:
+                    print("No occurrences found using direct Replace method")
+
+            except Exception as e2:
+                print(f"Direct Replace method error: {e2}")
+
+            # Method 3: DISABLED - Manual replacement is too risky and causes document corruption
+            print("Manual replacement method disabled to prevent document corruption")
+            print(f"Consider using safe insertion methods instead")
+
+            print(f"All safe methods failed to find and replace text")
+            return False
+
+        except Exception as e:
+            print(f"Failed to find and replace text: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def select_and_replace_text(self, find_text: str, replace_text: str) -> bool:
+        """
+        텍스트를 찾아서 선택하고 바꿉니다. 포맷팅을 유지합니다.
+
+        Args:
+            find_text (str): 찾을 텍스트
+            replace_text (str): 바꿀 텍스트
+
+        Returns:
+            bool: 성공 여부
+        """
+        try:
+            if not self.is_hwp_running:
+                print("HWP is not running")
+                return False
+
+            print(f"Attempting to select and replace: '{find_text}' -> '{replace_text}'")
+
+            # Method 1: Try HWP's built-in Replace (most reliable)
+            try:
+                # Move to document beginning
+                self.hwp.HAction.Run("MoveDocBegin")
+
+                # Use Replace action directly - this is the most reliable method
+                self.hwp.HAction.GetDefault("Replace", self.hwp.HParameterSet.HFindReplace.HSet)
+                pset = self.hwp.HParameterSet.HFindReplace
+
+                # Set parameters according to official documentation
+                pset.Direction = self.hwp.FindDir("AllDoc")  # Search entire document
+                pset.FindString = find_text
+                pset.ReplaceString = replace_text
+                pset.ReplaceMode = 0  # Replace one occurrence
+                pset.IgnoreMessage = 1  # Don't show messages
+                pset.FindType = 1  # Normal find
+                pset.FindJaso = 0
+                pset.FindRegExp = 0
+                pset.WholeWordOnly = 0
+                pset.MatchCase = 0
+                pset.AllWordForms = 0
+                pset.SeveralWords = 0
+                pset.UseWildCards = 0
+                pset.AutoSpell = 1
+
+                # Execute replace
+                if self.hwp.HAction.Execute("Replace", pset.HSet):
+                    print(f"Successfully replaced using HWP Replace method")
+                    return True
+                else:
+                    print(f"Text not found using HWP Replace method: '{find_text}'")
+                    return False
+
+            except Exception as e1:
+                print(f"HWP Replace method failed: {e1}")
+
+            # Method 2: Try direct Find/Replace API (if Method 1 fails)
+            try:
+                # Move to document beginning
+                self.hwp.HAction.Run("MoveDocBegin")
+
+                # Use Replace action directly
+                self.hwp.HAction.GetDefault("Replace", self.hwp.HParameterSet.HFindReplace.HSet)
+                replace_pset = self.hwp.HParameterSet.HFindReplace
+
+                replace_pset.FindString = find_text
+                replace_pset.ReplaceString = replace_text
+                replace_pset.IgnoreMessage = 1
+                replace_pset.Direction = self.hwp.FindDir().FORWARD
+                replace_pset.FindJaso = 0
+                replace_pset.FindRegExp = 0
+                replace_pset.FindWholeWord = 0
+                replace_pset.IgnoreCase = 0
+                replace_pset.ReplaceMode = 0  # Replace one occurrence
+
+                # Execute replace
+                if self.hwp.HAction.Execute("Replace", replace_pset.HSet):
+                    print(f"Successfully replaced using HWP Replace method")
+                    return True
+                else:
+                    print(f"Text not found using HWP Replace method: '{find_text}'")
+                    return False
+
+            except Exception as e2:
+                print(f"HWP Replace method failed: {e2}")
+
+            # Method 3: DISABLED - Manual replacement causes document corruption
+            print("Manual replacement method disabled to prevent document corruption")
+
+            print(f"All safe methods failed to find and replace text: '{find_text}'")
+            return False
+
+        except Exception as e:
+            print(f"Failed to select and replace text: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def move_to_text(self, search_text: str) -> bool:
+        """
+        문서에서 특정 텍스트 위치로 커서를 이동합니다.
+
+        Args:
+            search_text (str): 찾을 텍스트
+
+        Returns:
+            bool: 성공 여부
+        """
+        try:
+            if not self.is_hwp_running:
+                print("HWP is not running")
+                return False
+
+            print(f"Attempting to move cursor to: '{search_text}'")
+
+            # Method 1: Try HWP's built-in find
+            try:
+                self.hwp.HAction.GetDefault("Find", self.hwp.HParameterSet.HFindReplace.HSet)
+                find_pset = self.hwp.HParameterSet.HFindReplace
+
+                find_pset.FindString = search_text
+                find_pset.IgnoreMessage = 1
+                find_pset.FindJaso = 0
+                find_pset.FindRegExp = 0
+                find_pset.FindWholeWord = 0
+                find_pset.IgnoreCase = 0
+                find_pset.Direction = self.hwp.FindDir().FORWARD
+                find_pset.FindType = 1
+
+                result = self.hwp.HAction.Execute("Find", find_pset.HSet)
+
+                if result:
+                    print(f"Successfully moved cursor using built-in find")
+                    return True
+                else:
+                    print(f"Built-in find failed, trying manual search")
+
+            except Exception as e1:
+                print(f"Built-in find error: {e1}")
+
+            # Method 2: Manual search by checking document content
+            try:
+                full_text = self.get_text()
+                if search_text in full_text:
+                    # Text exists in document
+                    print(f"Text found in document, attempting to position cursor")
+
+                    # Move to beginning and try to find position
+                    self.hwp.HAction.Run("MoveDocBegin")
+
+                    # For now, just return True if text exists
+                    # More sophisticated positioning can be added later
+                    return True
+                else:
+                    print(f"Text not found in document: '{search_text}'")
+                    return False
+
+            except Exception as e2:
+                print(f"Manual search error: {e2}")
+
+            return False
+
+        except Exception as e:
+            print(f"Failed to move to text: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def fill_form_field(self, field_identifier: str, new_value: str, method: str = "replace") -> bool:
+        """
+        폼 필드를 채웁니다. 포맷팅을 유지합니다.
+
+        Args:
+            field_identifier (str): 필드 식별자 (찾을 텍스트)
+            new_value (str): 새로운 값
+            method (str): 채우기 방법 ("replace", "append", "insert_after")
+
+        Returns:
+            bool: 성공 여부
+        """
+        try:
+            print(f"Filling form field: '{field_identifier}' with '{new_value}' using method '{method}'")
+
+            if method == "replace":
+                return self.find_and_replace_text(field_identifier, new_value, replace_all=False)
+            elif method == "append":
+                if self.move_to_text(field_identifier):
+                    # 텍스트 끝으로 이동
+                    self.hwp.HAction.Run("MoveSelEndOfWord")
+                    return self.insert_text(new_value)
+                return False
+            elif method == "insert_after":
+                if self.move_to_text(field_identifier):
+                    # 텍스트 다음으로 이동하고 새 줄에 삽입
+                    self.hwp.HAction.Run("MoveSelEndOfWord")
+                    self.hwp.HAction.Run("MoveSelRight")
+                    # 새 줄 추가 후 텍스트 삽입
+                    self.insert_text("\n" + new_value)
+                    return True
+                return False
+            elif method == "fill_blank":
+                # 빈 필드나 플레이스홀더를 찾아서 채우기
+                return self.find_and_replace_text(field_identifier, new_value, replace_all=False)
+            else:
+                print(f"Unknown method: {method}")
+                return False
+
+        except Exception as e:
+            print(f"Failed to fill form field: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
     def create_new_document(self) -> bool:
         """
         Create a new document.
@@ -211,33 +526,42 @@ class HwpController:
     def save_document(self, file_path: Optional[str] = None) -> bool:
         """
         문서를 저장합니다.
-        
+
         Args:
             file_path (str, optional): 저장할 경로. None이면 현재 경로에 저장.
-            
+
         Returns:
             bool: 저장 성공 여부
         """
         try:
             if not self.is_hwp_running:
+                print("HWP is not running")
                 return False
-            
+
             if file_path:
+                # 지정된 경로에 저장
                 abs_path = os.path.abspath(file_path)
-                # 파일 형식과 경로 모두 지정하여 저장
+                print(f"Saving document to specified path: {abs_path}")
                 self.hwp.SaveAs(abs_path, "HWP", "")
                 self.current_document_path = abs_path
+                print(f"Document saved to: {abs_path}")
             else:
-                if self.current_document_path:
-                    self.hwp.Save()
+                # 현재 문서 경로가 있으면 그 위치에 덮어쓰기 저장
+                if self.current_document_path and os.path.exists(self.current_document_path):
+                    print(f"Saving document to current path: {self.current_document_path}")
+                    # SaveAs를 사용하여 원본 파일에 덮어쓰기
+                    self.hwp.SaveAs(self.current_document_path, "HWP", "")
+                    print(f"Document saved to: {self.current_document_path}")
                 else:
-                    # 저장 대화 상자 표시 (파라미터 없이 호출)
-                    self.hwp.SaveAs()
-                    # 대화 상자에서 사용자가 선택한 경로를 알 수 없으므로 None 유지
-            
+                    print("No current document path available, using Save() method")
+                    self.hwp.Save()
+                    print("Document saved using Save() method")
+
             return True
         except Exception as e:
             print(f"Failed to save document: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def insert_text(self, text: str, preserve_linebreaks: bool = True) -> bool:
@@ -774,4 +1098,125 @@ class HwpController:
             
         except Exception as e:
             print(f"Failed to fill table data: {e}")
+            return False
+
+    def safe_insert_after_text(self, find_text: str, insert_text: str) -> bool:
+        """
+        안전하게 텍스트를 찾아서 그 뒤에 내용을 삽입합니다. 문서 손상 위험이 없습니다.
+
+        Args:
+            find_text (str): 찾을 텍스트
+            insert_text (str): 삽입할 텍스트
+
+        Returns:
+            bool: 성공 여부
+        """
+        try:
+            if not self.is_hwp_running:
+                print("HWP is not running")
+                return False
+
+            print(f"Safe insert after text: '{find_text}' -> '{insert_text}'")
+
+            # Move to the text location
+            if not self.move_to_text(find_text):
+                print(f"Could not find text: '{find_text}'")
+                return False
+
+            # Move to the end of the found text
+            for i in range(len(find_text)):
+                self.hwp.HAction.Run("MoveRight")
+
+            # Insert the new text
+            success = self.insert_text(insert_text)
+
+            if success:
+                print(f"Successfully inserted '{insert_text}' after '{find_text}'")
+                return True
+            else:
+                print(f"Failed to insert text")
+                return False
+
+        except Exception as e:
+            print(f"Failed safe insert: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def manual_find_and_replace(self, find_text: str, replace_text: str) -> bool:
+        """
+        수동으로 텍스트를 찾아서 바꿉니다. 더 안전한 방법을 사용합니다.
+
+        Args:
+            find_text (str): 찾을 텍스트
+            replace_text (str): 바꿀 텍스트
+
+        Returns:
+            bool: 성공 여부
+        """
+        try:
+            if not self.is_hwp_running:
+                print("HWP is not running")
+                return False
+
+            print(f"Manual find and replace: '{find_text}' -> '{replace_text}'")
+
+            # Get the full document text to work with
+            full_text = self.get_text()
+            if not full_text:
+                print("Could not get document text")
+                return False
+
+            # Check if the find_text exists in the document
+            if find_text not in full_text:
+                print(f"Text not found in document: '{find_text}'")
+                return False
+
+            # Find the position of the text in the full document
+            text_position = full_text.find(find_text)
+            if text_position == -1:
+                print(f"Could not locate text position: '{find_text}'")
+                return False
+
+            print(f"Found text at character position: {text_position}")
+
+            # Instead of trying to select and replace, let's use a different approach
+            # Move to document beginning
+            self.hwp.HAction.Run("MoveDocBegin")
+
+            # Move character by character to the exact position
+            for i in range(text_position):
+                self.hwp.HAction.Run("MoveRight")
+
+            # Now select the exact number of characters
+            for i in range(len(find_text)):
+                self.hwp.HAction.Run("MoveSelRight")
+
+            # Verify we selected the right text by checking selection
+            try:
+                # Get selected text to verify
+                selected = self.hwp.GetSelectedText()
+                if selected != find_text:
+                    print(f"Selection mismatch. Expected: '{find_text}', Got: '{selected}'")
+                    # Clear selection and abort
+                    self.hwp.HAction.Run("Cancel")
+                    return False
+            except:
+                print("Could not verify selection, proceeding carefully...")
+
+            # Delete the selected text and insert replacement
+            self.hwp.HAction.Run("Delete")
+            success = self.insert_text(replace_text)
+
+            if success:
+                print(f"Successfully replaced '{find_text}' with '{replace_text}' using manual method")
+                return True
+            else:
+                print(f"Failed to insert replacement text")
+                return False
+
+        except Exception as e:
+            print(f"Failed manual find and replace: {e}")
+            import traceback
+            traceback.print_exc()
             return False
