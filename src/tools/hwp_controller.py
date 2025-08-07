@@ -60,7 +60,7 @@ class HwpController:
     def disconnect(self) -> bool:
         """
         한글 프로그램 연결을 종료합니다.
-        
+
         Returns:
             bool: 종료 성공 여부
         """
@@ -69,11 +69,47 @@ class HwpController:
                 # HwpObject를 해제합니다
                 self.hwp = None
                 self.is_hwp_running = False
-                
+
             return True
         except Exception as e:
             print(f"Failed to disconnect from HWP program: {e}")
             return False
+
+    def get_connection_info(self) -> dict:
+        """
+        HWP 연결 상태 및 문서 정보를 반환합니다.
+
+        Returns:
+            dict: 연결 상태 정보
+        """
+        info = {
+            "is_connected": self.is_hwp_running,
+            "current_document": self.current_document_path,
+            "hwp_object": self.hwp is not None
+        }
+
+        if self.is_hwp_running and self.hwp:
+            try:
+                # Try to get HWP version info
+                info["hwp_version"] = getattr(self.hwp, 'Version', 'Unknown')
+
+                # Try to get document count
+                try:
+                    info["document_count"] = self.hwp.XHwpDocuments.Count
+                except:
+                    info["document_count"] = "Unknown"
+
+                # Try to get current document info
+                try:
+                    if hasattr(self.hwp, 'Path'):
+                        info["current_hwp_path"] = self.hwp.Path
+                except:
+                    info["current_hwp_path"] = "Unknown"
+
+            except Exception as e:
+                info["connection_error"] = str(e)
+
+        return info
 
     def create_new_document(self) -> bool:
         """
@@ -96,23 +132,80 @@ class HwpController:
     def open_document(self, file_path: str) -> bool:
         """
         문서를 엽니다.
-        
+
         Args:
             file_path (str): 열 문서의 경로
-            
+
         Returns:
             bool: 열기 성공 여부
         """
         try:
             if not self.is_hwp_running:
-                self.connect()
-            
+                if not self.connect():
+                    print("Failed to connect to HWP program")
+                    return False
+
+            # Validate file path
+            if not file_path:
+                print("File path is empty")
+                return False
+
+            # Convert to absolute path and normalize
             abs_path = os.path.abspath(file_path)
-            self.hwp.Open(abs_path)
-            self.current_document_path = abs_path
-            return True
+            abs_path = abs_path.replace('/', '\\')  # Ensure Windows path format
+
+            # Check if file exists
+            if not os.path.exists(abs_path):
+                print(f"File does not exist: {abs_path}")
+                return False
+
+            # Check if file is readable
+            if not os.access(abs_path, os.R_OK):
+                print(f"File is not readable: {abs_path}")
+                return False
+
+            print(f"Attempting to open file: {abs_path}")
+
+            # Try different opening methods
+            success = False
+
+            # Method 1: Standard Open
+            try:
+                self.hwp.Open(abs_path)
+                success = True
+                print("Successfully opened using standard Open method")
+            except Exception as e1:
+                print(f"Standard Open failed: {e1}")
+
+                # Method 2: Open with format specification
+                try:
+                    self.hwp.Open(abs_path, "HWP", "")
+                    success = True
+                    print("Successfully opened using Open with format specification")
+                except Exception as e2:
+                    print(f"Open with format failed: {e2}")
+
+                    # Method 3: FileOpen action
+                    try:
+                        self.hwp.Run("FileOpen")
+                        # This will open a dialog, but we can try to set the path
+                        success = False  # This method requires user interaction
+                        print("FileOpen action requires user interaction")
+                    except Exception as e3:
+                        print(f"FileOpen action failed: {e3}")
+
+            if success:
+                self.current_document_path = abs_path
+                print(f"Document successfully opened: {abs_path}")
+                return True
+            else:
+                print("All opening methods failed")
+                return False
+
         except Exception as e:
             print(f"Failed to open document: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def save_document(self, file_path: Optional[str] = None) -> bool:

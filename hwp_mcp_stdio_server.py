@@ -138,19 +138,42 @@ def hwp_open(path: str) -> str:
     try:
         if not path:
             return "Error: File path is required"
-        
+
         hwp = get_hwp_controller()
         if not hwp:
             return "Error: Failed to connect to HWP program"
-        
+
+        # Get connection info for debugging
+        conn_info = hwp.get_connection_info()
+        logger.info(f"Connection info before opening: {conn_info}")
+
         if hwp.open_document(path):
             logger.info(f"Successfully opened document: {path}")
             return f"Document opened: {path}"
         else:
+            # Get updated connection info after failure
+            conn_info_after = hwp.get_connection_info()
+            logger.error(f"Connection info after failure: {conn_info_after}")
             return "Error: Failed to open document"
     except Exception as e:
-        logger.error(f"Error opening document: {str(e)}", exc_info=True)
-        return f"Error: {str(e)}"
+        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+        logger.error(f"Error opening document: {error_msg}", exc_info=True)
+        return f"Error: {error_msg}"
+
+@mcp.tool()
+def hwp_connection_info() -> str:
+    """Get HWP connection status and debugging information."""
+    try:
+        hwp = get_hwp_controller()
+        if not hwp:
+            return "Error: Failed to connect to HWP program"
+
+        info = hwp.get_connection_info()
+        return f"HWP Connection Info: {info}"
+    except Exception as e:
+        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+        logger.error(f"Error getting connection info: {error_msg}", exc_info=True)
+        return f"Error: {error_msg}"
 
 @mcp.tool()
 def hwp_save(path: str = None) -> str:
