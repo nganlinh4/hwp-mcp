@@ -33,11 +33,11 @@ sys.path.append(current_dir)
 
 try:
     # Import FastMCP library
-    from mcp.server.fastmcp import FastMCP
+    from fastmcp import FastMCP
     logger.info("FastMCP successfully imported")
 except ImportError as e:
     logger.error(f"Failed to import FastMCP: {str(e)}")
-    print(f"Error: Failed to import FastMCP. Please install with 'pip install mcp'", file=sys.stderr)
+    print(f"Error: Failed to import FastMCP. Please install with 'pip install fastmcp'", file=sys.stderr)
     sys.exit(1)
 
 # Try to import HwpController
@@ -74,11 +74,10 @@ except ImportError as e:
 
 # Initialize FastMCP server
 mcp = FastMCP(
-    "hwp-mcp",
+    name="hwp-mcp",
+    instructions="HWP MCP Server for controlling Hangul Word Processor",
     version="0.1.0",
-    description="HWP MCP Server for controlling Hangul Word Processor",
-    dependencies=["pywin32>=305"],
-    env_vars={}
+    dependencies=["pywin32>=305"]
 )
 
 # Global HWP controller instance
@@ -129,8 +128,9 @@ def hwp_create() -> str:
         else:
             return "Error: Failed to create new document"
     except Exception as e:
-        logger.error(f"Error creating document: {str(e)}", exc_info=True)
-        return f"Error: {str(e)}"
+        error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+        logger.error(f"Error creating document: {error_msg}", exc_info=True)
+        return f"Error: {error_msg}"
 
 @mcp.tool()
 def hwp_open(path: str) -> str:
@@ -507,7 +507,7 @@ def hwp_create_complete_document(document_spec: dict) -> dict:
         if not hwp:
             return {"status": "error", "message": "Failed to connect to HWP program"}
         
-        # 새 문서 생성
+        # Create new document
         if not hwp.create_new_document():
             return {"status": "error", "message": "Failed to create new document"}
         
@@ -724,7 +724,7 @@ def hwp_create_document_from_text(content: str, title: str = None, format_conten
         if not hwp:
             return {"status": "error", "message": "Failed to connect to HWP program"}
         
-        # 새 문서 생성
+        # Create new document
         if not hwp.create_new_document():
             return {"status": "error", "message": "Failed to create new document"}
         
@@ -1059,7 +1059,7 @@ def hwp_batch_operations(operations: list) -> dict:
                         result["status"] = "error"
                         result["message"] = "Failed to close document"
                 
-                # 새로 추가: 문서 한 번에 생성
+                # Create document from text
                 elif operation == "create_document_from_text":
                     content = params.get("content", "")
                     title = params.get("title", None)

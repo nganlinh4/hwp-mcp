@@ -38,19 +38,23 @@ class HwpController:
             # 보안 모듈 등록 (파일 경로 체크 보안 경고창 방지)
             if register_security_module:
                 try:
-                    # 보안 모듈 DLL 경로 - 실제 파일이 위치한 경로로 수정 필요
-                    module_path = os.path.abspath("D:/hwp-mcp/security_module/FilePathCheckerModuleExample.dll")
-                    self.hwp.RegisterModule("FilePathCheckerModuleExample", module_path)
-                    print("보안 모듈이 등록되었습니다.")
+                    # Security module DLL path - relative to current directory
+                    current_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                    module_path = os.path.join(current_dir, "security_module", "FilePathCheckerModuleExample.dll")
+                    if os.path.exists(module_path):
+                        self.hwp.RegisterModule("FilePathCheckerModuleExample", module_path)
+                        print("Security module registered successfully.")
+                    else:
+                        print(f"Security module not found at: {module_path}")
                 except Exception as e:
-                    print(f"보안 모듈 등록 실패 (무시하고 계속 진행): {e}")
+                    print(f"Security module registration failed (continuing anyway): {e}")
             
             self.visible = visible
             self.hwp.XHwpWindows.Item(0).Visible = visible
             self.is_hwp_running = True
             return True
         except Exception as e:
-            print(f"한글 프로그램 연결 실패: {e}")
+            print(f"Failed to connect to HWP program: {e}")
             return False
 
     def disconnect(self) -> bool:
@@ -68,15 +72,15 @@ class HwpController:
                 
             return True
         except Exception as e:
-            print(f"한글 프로그램 종료 실패: {e}")
+            print(f"Failed to disconnect from HWP program: {e}")
             return False
 
     def create_new_document(self) -> bool:
         """
-        새 문서를 생성합니다.
-        
+        Create a new document.
+
         Returns:
-            bool: 생성 성공 여부
+            bool: Success status
         """
         try:
             if not self.is_hwp_running:
@@ -86,7 +90,7 @@ class HwpController:
             self.current_document_path = None
             return True
         except Exception as e:
-            print(f"새 문서 생성 실패: {e}")
+            print(f"Failed to create new document: {e}")
             return False
 
     def open_document(self, file_path: str) -> bool:
@@ -108,7 +112,7 @@ class HwpController:
             self.current_document_path = abs_path
             return True
         except Exception as e:
-            print(f"문서 열기 실패: {e}")
+            print(f"Failed to open document: {e}")
             return False
 
     def save_document(self, file_path: Optional[str] = None) -> bool:
@@ -140,7 +144,7 @@ class HwpController:
             
             return True
         except Exception as e:
-            print(f"문서 저장 실패: {e}")
+            print(f"Failed to save document: {e}")
             return False
 
     def insert_text(self, text: str, preserve_linebreaks: bool = True) -> bool:
@@ -171,7 +175,7 @@ class HwpController:
                 # 줄바꿈이 없거나 유지하지 않는 경우 한 번에 처리
                 return self._insert_text_direct(text)
         except Exception as e:
-            print(f"텍스트 삽입 실패: {e}")
+            print(f"Failed to insert text: {e}")
             return False
 
     def _set_table_cursor(self) -> bool:
@@ -211,7 +215,7 @@ class HwpController:
             self.hwp.HAction.Execute("InsertText", self.hwp.HParameterSet.HInsertText.HSet)
             return True
         except Exception as e:
-            print(f"텍스트 직접 삽입 실패: {e}")
+            print(f"Failed to insert text directly: {e}")
             return False
 
     def set_font(self, font_name: str, font_size: int, bold: bool = False, italic: bool = False, 
@@ -243,7 +247,7 @@ class HwpController:
                 select_previous_text=select_previous_text
             )
         except Exception as e:
-            print(f"글꼴 설정 실패: {e}")
+            print(f"Failed to set font: {e}")
             return False
 
     def set_font_style(self, font_name: str = None, font_size: int = None, 
@@ -300,7 +304,7 @@ class HwpController:
             return True
             
         except Exception as e:
-            print(f"글꼴 스타일 설정 실패: {e}")
+            print(f"Failed to set font style: {e}")
             return False
 
     def _get_current_position(self):
@@ -354,7 +358,7 @@ class HwpController:
             self.hwp.HAction.Execute("TableCreate", self.hwp.HParameterSet.HTableCreation.HSet)
             return True
         except Exception as e:
-            print(f"표 삽입 실패: {e}")
+            print(f"Failed to insert table: {e}")
             return False
 
     def insert_image(self, image_path: str, width: int = 0, height: int = 0) -> bool:
@@ -386,7 +390,7 @@ class HwpController:
             self.hwp.HAction.Execute("InsertPicture", self.hwp.HParameterSet.HInsertPicture.HSet)
             return True
         except Exception as e:
-            print(f"이미지 삽입 실패: {e}")
+            print(f"Failed to insert image: {e}")
             return False
 
     def find_text(self, text: str) -> bool:
@@ -410,7 +414,7 @@ class HwpController:
             result = self.hwp.Run(f'FindText "{text}" 1')  # 1=정방향검색
             return result  # True 또는 False 반환
         except Exception as e:
-            print(f"텍스트 찾기 실패: {e}")
+            print(f"Failed to find text: {e}")
             return False
 
     def replace_text(self, find_text: str, replace_text: str, replace_all: bool = False) -> bool:
@@ -444,7 +448,7 @@ class HwpController:
                     return bool(result)
                 return False
         except Exception as e:
-            print(f"텍스트 바꾸기 실패: {e}")
+            print(f"Failed to replace text: {e}")
             return False
 
     def get_text(self) -> str:
@@ -460,7 +464,7 @@ class HwpController:
             
             return self.hwp.GetTextFile("TEXT", "")
         except Exception as e:
-            print(f"텍스트 가져오기 실패: {e}")
+            print(f"Failed to get text: {e}")
             return ""
 
     def set_page_setup(self, orientation: str = "portrait", margin_left: int = 1000, 
@@ -489,7 +493,7 @@ class HwpController:
             result = self.hwp.Run(f"PageSetup3 {orient_val} {margin_left} {margin_right} {margin_top} {margin_bottom}")
             return bool(result)
         except Exception as e:
-            print(f"페이지 설정 실패: {e}")
+            print(f"Failed to set page setup: {e}")
             return False
 
     def insert_paragraph(self) -> bool:
@@ -506,7 +510,7 @@ class HwpController:
             self.hwp.HAction.Run("BreakPara")
             return True
         except Exception as e:
-            print(f"단락 삽입 실패: {e}")
+            print(f"Failed to insert paragraph: {e}")
             return False
 
     def select_all(self) -> bool:
@@ -523,7 +527,7 @@ class HwpController:
             self.hwp.Run("SelectAll")
             return True
         except Exception as e:
-            print(f"전체 선택 실패: {e}")
+            print(f"Failed to select all: {e}")
             return False
 
     def fill_cell_field(self, field_name: str, value: str, n: int = 1) -> bool:
@@ -573,7 +577,7 @@ class HwpController:
             
             return True
         except Exception as e:
-            print(f"셀필드 값 채우기 실패: {e}")
+            print(f"Failed to fill cell field: {e}")
             return False
         
     def select_last_text(self) -> bool:
@@ -602,7 +606,7 @@ class HwpController:
             
             return True
         except Exception as e:
-            print(f"텍스트 선택 실패: {e}")
+            print(f"Failed to select text: {e}")
             return False
 
     def fill_table_with_data(self, data: List[List[str]], start_row: int = 1, start_col: int = 1, has_header: bool = False) -> bool:
@@ -676,5 +680,5 @@ class HwpController:
             return True
             
         except Exception as e:
-            print(f"표 데이터 채우기 실패: {e}")
+            print(f"Failed to fill table data: {e}")
             return False
