@@ -2,6 +2,8 @@
 
 [![GitHub](https://img.shields.io/github/license/jkf87/hwp-mcp)](https://github.com/jkf87/hwp-mcp)
 
+> **This is an improved fork** with FastMCP v2.11.2 compatibility and enhanced error handling. See [Improvements](#improvements) section for details.
+
 HWP-MCP는 한글 워드 프로세서(HWP)를 Claude와 같은 AI 모델이 제어할 수 있도록 해주는 Model Context Protocol(MCP) 서버입니다. 이 프로젝트는 한글 문서를 자동으로 생성, 편집, 조작하는 기능을 AI에게 제공합니다.
 
 ## 주요 기능
@@ -23,7 +25,7 @@ HWP-MCP는 한글 워드 프로세서(HWP)를 Claude와 같은 AI 모델이 제�
 
 1. 저장소 클론:
 ```bash
-git clone https://github.com/jkf87/hwp-mcp.git
+git clone https://github.com/nganlinh4/hwp-mcp.git
 cd hwp-mcp
 ```
 
@@ -161,6 +163,36 @@ hwp-mcp/
 - [Cursor MCP](https://docs.cursor.com/context/model-context-protocol#configuration-locations)
 - [Smithery](https://smithery.ai/server/@jkf87/hwp-mcp)
 
+## Improvements
+
+This fork includes several improvements over the original project:
+
+### 🔧 **FastMCP v2.11.2 Compatibility**
+- Updated FastMCP import from `mcp.server.fastmcp` to `fastmcp`
+- Fixed FastMCP initialization parameters for latest version compatibility
+- Updated installation instructions to use `pip install fastmcp`
+
+### 🛠️ **Enhanced Error Handling**
+- Added UTF-8 encoding support for Korean characters in error messages
+- Improved error message handling to prevent encoding crashes
+- Better cross-platform compatibility
+
+### 📁 **Path Management**
+- Fixed hardcoded security module path to use relative paths
+- Improved portability across different system configurations
+- Dynamic path resolution for security module DLL
+
+### 🌐 **Internationalization**
+- Translated Korean error messages and comments to English
+- Improved code readability for international developers
+- Maintained Korean documentation for local users
+
+### 📋 **Code Quality**
+- Added comprehensive `.gitignore` file
+- Improved code documentation and comments
+- Better project structure and maintainability
+
 ## 연락처
 
-프로젝트 관련 문의는 GitHub 이슈, [코난쌤](https://www.youtube.com/@conanssam)를 통해 해주세요. 
+Original project: [jkf87/hwp-mcp](https://github.com/jkf87/hwp-mcp)
+프로젝트 관련 문의는 GitHub 이슈, [코난쌤](https://www.youtube.com/@conanssam)를 통해 해주세요.
